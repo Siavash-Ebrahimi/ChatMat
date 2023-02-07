@@ -1,20 +1,40 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { Component } from 'react';
+import { StyleSheet, View, Text, TextInput, Button, Alert, ScrollView } from 'react-native';// import the screens
+import Start from './components/Start';
+import Chat from './components/Chat';
+// import react native gesture handler
+import 'react-native-gesture-handler';
 
-export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+// import react Navigation
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+
+// Create the navigator, with this methods (createStackNavigator();) 
+/*Think of a stack navigator like a pile of paper: you start with one sheet, then place a second 
+sheet on top of it, then a third sheet, and so on. To get back to the bottom of the pile, you’d 
+remove the first sheet of paper from the top of your stack, then the second, then the third. 
+This concept is often used in application navigation: */
+const Stack = createStackNavigator();
+
+export default class App extends React.Component {
+
+  render() {
+    return (
+      <NavigationContainer>
+        <Stack.Navigator
+          initialRouteName="Start"
+        >
+          <Stack.Screen
+            name="Start"
+            component={Start}
+          />
+          <Stack.Screen
+            name="Chat"
+            component={Chat}
+          />
+        </Stack.Navigator>
+
+      </NavigationContainer>
+    );
+  }
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
