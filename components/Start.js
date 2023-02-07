@@ -8,7 +8,7 @@ const backgroundColors = {
   green: { backgroundColor: '#b9c6ae' }
 };
 
-export default class Screen1 extends React.Component {
+export default class Start extends React.Component {
   constructor(props) {
     super(props);
     this.state = { name: '', color: '' };
