@@ -2,7 +2,7 @@
 
  ## Intro
 
- ChatMat has been created by React Native & designed to work on both Android/iOS mobile phones. The app provides users with a chat interface and options to share images and their location.
+ ChatMat has been created by React Native, and designed to work on both Android/iOS mobile phones. The app provides users with a chat interface and options to share images and their location.
 
  ## Technologies being used:
  Technologies being used:
