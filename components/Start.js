@@ -11,16 +11,16 @@ const backgroundColors = {
 export default class Start extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { name: '', color: '' };
+    this.state = { name: '', color: '#757083' };
   }
 
-  // alertMyText(input = []) {
-  //   if (this.state.name === '') {
-  //     Alert.alert('Please Insert Chat Room Name!');
-  //   } else {
-  //     this.props.navigation.navigate('Chat', { name: this.state.name, color: this.state.name });
-  //   }
-  // }
+  alertMyText(input = []) {
+    if (this.state.name === '') {
+      Alert.alert('Please insert a name to start chat!');
+    } else {
+      this.props.navigation.navigate('Chat', { name: this.state.name, color: this.state.color });
+    }
+  }
 
   render() {
     const { black, purple, grey, green } = backgroundColors;
@@ -37,9 +37,9 @@ export default class Start extends React.Component {
               style={styles.nameBox}
               onChangeText={(name) => this.setState({ name })}
               value={this.state.name}
-              placeholder='Enter your Name' />
+              placeholder='To whom you will chat ...' />
             <View>
-              <Text style={styles.colorText}>Choose your Background:</Text>
+              <Text style={styles.colorText}>Choose Chat Background:</Text>
               <View style={styles.colorWrapper}>
                 <TouchableOpacity style={[styles.color, black]}
                   onPress={() =>
@@ -64,14 +64,10 @@ export default class Start extends React.Component {
               </View>
             </View>
             <TouchableOpacity
-              style={[styles.nameBox, styles.chatBox]}
-              onPress={() =>
-                this.props.navigation.navigate('Chat',
-                  {
-                    name: this.state.name,
-                    color: this.state.color
-                  })
-              }
+              style={[styles.nameBox, { backgroundColor: this.state.color, justifyContent: 'center' }]}
+              onPress={() => {
+                this.alertMyText({ text: this.state.text });
+              }}
             >
               <Text
                 style={[styles.colorText, styles.chatBoxText]}>Start Chatting</Text>
@@ -133,10 +129,6 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     margin: 10
-  },
-  chatBox: {
-    backgroundColor: '#757083',
-    justifyContent: 'center'
   },
   chatBoxText: {
     color: '#fff',
