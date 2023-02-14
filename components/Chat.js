@@ -19,7 +19,6 @@ export default class Chat extends React.Component {
         name: '',
         avatar: '',
       },
-      loggedInText: 'Please wait, you are getting logged in',
     }
 
     // =================================================
@@ -49,25 +48,6 @@ export default class Chat extends React.Component {
     this.referenceChatMessages = firebase.firestore().collection("messages");
   }
 
-  onCollectionUpdate = (querySnapshot) => {
-    const messages = [];
-    // go through each document
-    querySnapshot.forEach((doc) => {
-      // get the QueryDocumentSnapshot's data
-      let data = doc.data();
-      messages.push({
-        _id: data._id,
-        text: data.text,
-        createdAt: data.createdAt.toDate(),
-        user: {
-          _id: data.user._id,
-          name: data.user.name,
-        },
-      });
-    });
-    this.setState({ messages });
-  };
-
 
   componentDidMount() {
     let name = this.props.route.params.name;
@@ -80,13 +60,8 @@ export default class Chat extends React.Component {
         firebase.auth().signInAnonymously();
       }
       this.setState({
-        uid: user.uid,
+        uid: user?.uid,
         messages: [],
-        user: {
-          _id: user.uid,
-          name: name,
-        },
-        loggedInText: '',
       });
       /* The below lines of code will get any update (onSnapshot) from Collection in our 
        database. Below just ask the app to take a snapshot of "messages" -> Collection
@@ -117,6 +92,26 @@ export default class Chat extends React.Component {
     );
   }
 
+  onCollectionUpdate = (querySnapshot) => {
+    const messages = [];
+    // go through each document
+    querySnapshot.forEach((doc) => {
+      // get the QueryDocumentSnapshot's data
+      let data = doc.data();
+      messages.push({
+        _id: data._id,
+        text: data.text,
+        createdAt: data.createdAt.toDate(),
+        user: {
+          _id: data.user._id,
+          name: data.user.name,
+          avatar: data.user.avatar,
+        },
+      });
+    });
+    this.setState({ messages });
+  };
+
   // Add message to Firestore Database (ChatMat)
   addMessage = () => {
     const message = this.state.messages[0];
@@ -126,8 +121,7 @@ export default class Chat extends React.Component {
       text: message.text || '',
       createdAt: message.createdAt,
       user: message.user,
-      image: message.image || null,
-      location: message.location || null,
+      avatar: message.avatar,
     });
   };
 
@@ -152,13 +146,13 @@ export default class Chat extends React.Component {
     let color = this.props?.route?.params?.color;
     return (
       <View style={{ flex: 1, backgroundColor: color }}>
+        {/* <Text>{this.state.loggedInText}</Text> */}
         <GiftedChat
           renderBubble={this.renderBubble.bind(this)}
           messages={this.state.messages}
           onSend={(messages) => this.onSend(messages)}
           user={{
-            _id: this.state.uid,
-            avatar: 'https://placeimg.com/140/140/any',
+            _id: this.state.user._id,
           }}
         />
         {Platform.OS === 'android' ? <KeyboardAvoidingView behavior="height" /> : null}
