@@ -14,11 +14,6 @@ export default class Chat extends React.Component {
     this.state = {
       messages: [],
       uid: 0,
-      user: {
-        _id: '',
-        name: '',
-        avatar: '',
-      },
     }
 
     // =================================================
@@ -102,11 +97,7 @@ export default class Chat extends React.Component {
         _id: data._id,
         text: data.text,
         createdAt: data.createdAt.toDate(),
-        user: {
-          _id: data.user._id,
-          name: data.user.name,
-          avatar: data.user.avatar,
-        },
+        user: data.user,
       });
     });
     this.setState({ messages });
@@ -145,13 +136,12 @@ export default class Chat extends React.Component {
     let color = this.props?.route?.params?.color;
     return (
       <View style={{ flex: 1, backgroundColor: color }}>
-        {/* <Text>{this.state.loggedInText}</Text> */}
         <GiftedChat
           renderBubble={this.renderBubble.bind(this)}
           messages={this.state.messages}
           onSend={(messages) => this.onSend(messages)}
           user={{
-            _id: this.state.user._id,
+            _id: this.state.uid,
           }}
         />
         {Platform.OS === 'android' ? <KeyboardAvoidingView behavior="height" /> : null}
