@@ -1,12 +1,23 @@
 import React from 'react';
 import { View, Platform, KeyboardAvoidingView } from 'react-native';
-
-import { GiftedChat, Bubble } from 'react-native-gifted-chat'
-
+import { GiftedChat, Bubble, InputToolbar } from 'react-native-gifted-chat'
+// Import & Call React-Native asyncStorage to save messages dada on user device iOS/Android.
+import AsyncStorage from "@react-native-async-storage/async-storage";
+/* Import & Call React-Native NetInfo to determine if a user is onLine or offLine 
+   for choose the fetch data methods: From AsyncStorage (Local Storage) or from Static Database (Google Firestore) */
+import NetInfo from '@react-native-community/netinfo';
 // Call and Import Google Firebases and Firestore
 const firebase = require('firebase');
 require('firebase/firestore');
 
+// Declare an empty Offline alert system message.
+let offlineAlert = {
+  _id: 1,
+  text: "",
+  system: true,
+};
+
+// Chat component
 export default class Chat extends React.Component {
 
   constructor() {
@@ -14,6 +25,8 @@ export default class Chat extends React.Component {
     this.state = {
       messages: [],
       uid: 0,
+      user: {},
+      isConnected: true,
     }
 
     // =================================================
@@ -43,6 +56,18 @@ export default class Chat extends React.Component {
     this.referenceChatMessages = firebase.firestore().collection("messages");
   }
 
+  // Retrieve chat messages from asyncStorage (Client-Side Storage)
+  async getMessages() {
+    let messages = '';
+    try {
+      messages = await AsyncStorage.getItem('messages') || [];
+      this.setState({
+        messages: JSON.parse(messages)
+      });
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
 
   componentDidMount() {
     let name = this.props.route.params.name;
@@ -50,43 +75,75 @@ export default class Chat extends React.Component {
 
     this.referenceChatMessages = firebase.firestore().collection('messages');
 
-    this.authUnsubscribe = firebase.auth().onAuthStateChanged((user) => {
-      if (!user) {
-        firebase.auth().signInAnonymously();
+    // Using React-Native "NetInfo" to check if user Online / Offline
+    NetInfo.fetch().then((connection) => {
+      if (connection.isConnected) {
+        // authorize firebase
+        this.authUnsubscribe = firebase
+          .auth()
+          .onAuthStateChanged(async (user) => {
+            if (!user) {
+              await firebase.auth().signInAnonymously();
+            }
+            //update user state with currently active user data
+            this.setState({
+              uid: user?.uid,
+              messages: [],
+              isConnected: true,
+            });
+            /* The below lines of code will get any update (onSnapshot) from Collection in our 
+               database. Below just ask the app to take a snapshot of "messages" -> Collection
+               through our connected database (MatChat database in Firestore). */
+            this.unsubscribe = this.referenceChatMessages
+              .orderBy('createdAt', 'desc')
+              .onSnapshot(this.onCollectionUpdate);
+          });
+      } else {
+        // update offline alert system message
+        offlineAlert = {
+          _id: 1,
+          text: "You are currently offline. Messages can't be updated or sent.",
+          system: true,
+        };
+
+        // get messages from local storage if not online
+        this.getMessages();
+        this.setState({ isConnected: false });
       }
-      this.setState({
-        uid: user?.uid,
-        messages: [],
-      });
-      /* The below lines of code will get any update (onSnapshot) from Collection in our 
-       database. Below just ask the app to take a snapshot of "messages" -> Collection
-       through our connected database (MatChat database in Firestore). */
-      this.unsubscribe = this.referenceChatMessages
-        .orderBy('createdAt', 'desc')
-        .onSnapshot(this.onCollectionUpdate);
     });
-
   }
-
 
   componentWillUnmount() {
-    // stop listening to authentication
-    this.authUnsubscribe();
-    /* We use below code to ask the app to do not get any update from database
-       as we do not use chat.js component now */
-    this.unsubscribe();
+    if (this.state.isConnected) {
+      /* We use below code to ask the app to do not get any update from database as we do not use chat.js component now */
+      this.unsubscribe();
+      // stop listening to authentication
+      this.authUnsubscribe();
+    }
   }
 
-  onSend(messages = []) {
-    this.setState(previousState => ({
-      messages: GiftedChat.append(previousState.messages, messages),
-    }),
-      () => {
-        this.addMessage();
-      }
-    );
+  //  Save chat messages on asyncStorage (Client-Side Storage)
+  async saveMessages() {
+    try {
+      await AsyncStorage.setItem('messages', JSON.stringify(this.state.messages));
+    } catch (error) {
+      console.log(error.message);
+    }
   }
 
+  //  Delete chat messages on asyncStorage (Client-Side Storage)
+  async deleteMessages() {
+    try {
+      await AsyncStorage.removeItem('messages');
+      this.setState({
+        messages: []
+      })
+    } catch (error) {
+      console.log(error.message);
+    }
+  }
+
+  // Update and push data on Firestorage database.
   onCollectionUpdate = (querySnapshot) => {
     const messages = [];
     // go through each document
@@ -115,6 +172,19 @@ export default class Chat extends React.Component {
     });
   };
 
+  // This function will active once we touch the send item to send our message.
+  onSend(messages = []) {
+    this.setState(previousState => ({
+      messages: GiftedChat.append(previousState.messages, messages),
+    }),
+      () => {
+        this.addMessage();
+        this.saveMessages();
+      }
+    );
+  }
+
+  // This Function control font, shape , color etc on both left & right of any message to display on mobile app.
   renderBubble(props) {
     return (
       <Bubble
@@ -131,6 +201,20 @@ export default class Chat extends React.Component {
     );
   }
 
+  /* Gifted Chat provides you with a prop called renderInputToolbar that 
+     lets you change how the bar is rendered. To only render the default 
+     InputToolbar when the user is online: */
+  renderInputToolbar(props) {
+    if (this.state.isConnected == false) {
+    } else {
+      return (
+        <InputToolbar
+          {...props}
+        />
+      );
+    }
+  }
+
   render() {
     let name = this.props.route.params.name;
     let color = this.props?.route?.params?.color;
@@ -138,7 +222,14 @@ export default class Chat extends React.Component {
       <View style={{ flex: 1, backgroundColor: color }}>
         <GiftedChat
           renderBubble={this.renderBubble.bind(this)}
-          messages={this.state.messages}
+          renderInputToolbar={this.renderInputToolbar.bind(this)}
+          // if offline, append offlineAlert message before message array
+          messages={
+            this.state.isConnected
+              ? this.state.messages
+              : [offlineAlert, ...this.state.messages]
+          }
+          // messages={this.state.messages}
           onSend={(messages) => this.onSend(messages)}
           user={{
             _id: this.state.uid,
