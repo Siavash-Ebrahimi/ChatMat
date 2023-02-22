@@ -6,8 +6,9 @@
 
  ## Technologies being used:
  Technologies being used:
- - React Native
- - Expo
+ - React-Native.
+ - Expo.
+ - Google Firebase (Firestore Database).
 
  ## User Stories
 
@@ -30,5 +31,17 @@
  - The chat must provide users with two additional communication features: sending images
  and location data.
  - Data gets stored online and offline
+
+ ## Setting up the development environment:
+
+ - Clone the repository: `git clone https://github.com/faysalmahmod/Chat-App`
+ - Install Expo CLI as a global npm package: `npm install -g expo-cli`
+ - Install all project dependencies: `npm install`
+ - Head over to https://expo.dev/, create an account and log in via terminal with `expo login`
+ - Follow expo CLI's instructions depending on your preferred simulator (XCode, Android Studio, Expo Go)
+ - Start the project: `npm start` or `expo start`
+ - In case Expo cannot detect the running project, try running it with `npx expo start --tunnel`
+
+ ## Screenshots
 
  ![screenshot](assets/Readme.png)
