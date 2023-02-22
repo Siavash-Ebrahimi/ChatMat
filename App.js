@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import { StyleSheet, View, Text, TextInput, Button, Alert, ScrollView } from 'react-native';// import the screens
 import Start from './components/Start';
 import Chat from './components/Chat';
+// import Cha from './components/Cha';
+import CustomActions from './components/CustomActions';
 // import react native gesture handler
 import 'react-native-gesture-handler';
 

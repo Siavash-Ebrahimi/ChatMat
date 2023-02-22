@@ -10,11 +10,18 @@ import NetInfo from '@react-native-community/netinfo';
 const firebase = require('firebase');
 require('firebase/firestore');
 
+// For adding + sighn to creat action functnality.
+import CustomActions from './CustomActions';
+
+import * as Location from 'expo-location';
+import MapView from 'react-native-maps';
+
 // Declare an empty Offline alert system message.
 let offlineAlert = {
   _id: 1,
   text: "",
   system: true,
+
 };
 
 // Chat component
@@ -26,7 +33,9 @@ export default class Chat extends React.Component {
       messages: [],
       uid: 0,
       user: {},
-      isConnected: true,
+      image: null,
+      location: null,
+      isConnected: false,
     }
 
     // =================================================
@@ -56,14 +65,35 @@ export default class Chat extends React.Component {
     this.referenceChatMessages = firebase.firestore().collection("messages");
   }
 
-  // Retrieve chat messages from asyncStorage (Client-Side Storage)
-  async getMessages() {
-    let messages = '';
+  // Retrieve chat messages from asyncStorage (Client-Side Storage) // temporarly storage of messages
+  getMessages = async () => {
+    let messages = "";
     try {
-      messages = await AsyncStorage.getItem('messages') || [];
+      messages = (await AsyncStorage.getItem("messages")) || [];
       this.setState({
-        messages: JSON.parse(messages)
+        messages: JSON.parse(messages),
       });
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
+
+  //  Save chat messages on asyncStorage (Client-Side Storage) 
+  saveMessages = async () => {
+    try {
+      await AsyncStorage.setItem('messages', JSON.stringify(this.state.messages));
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
+
+  //  Delete chat messages on asyncStorage (Client-Side Storage)
+  deleteMessages = async () => {
+    try {
+      await AsyncStorage.removeItem('messages');
+      this.setState({
+        messages: []
+      })
     } catch (error) {
       console.log(error.message);
     }
@@ -102,7 +132,7 @@ export default class Chat extends React.Component {
         // update offline alert system message
         offlineAlert = {
           _id: 1,
-          text: "You are currently offline. Messages can't be updated or sent.",
+          text: "You Are Offline!! Messages can't be updated or sent.",
           system: true,
         };
 
@@ -122,27 +152,6 @@ export default class Chat extends React.Component {
     }
   }
 
-  //  Save chat messages on asyncStorage (Client-Side Storage)
-  async saveMessages() {
-    try {
-      await AsyncStorage.setItem('messages', JSON.stringify(this.state.messages));
-    } catch (error) {
-      console.log(error.message);
-    }
-  }
-
-  //  Delete chat messages on asyncStorage (Client-Side Storage)
-  async deleteMessages() {
-    try {
-      await AsyncStorage.removeItem('messages');
-      this.setState({
-        messages: []
-      })
-    } catch (error) {
-      console.log(error.message);
-    }
-  }
-
   // Update and push data on Firestorage database.
   onCollectionUpdate = (querySnapshot) => {
     const messages = [];
@@ -152,9 +161,11 @@ export default class Chat extends React.Component {
       let data = doc.data();
       messages.push({
         _id: data._id,
-        text: data.text,
+        text: data.text || "",
         createdAt: data.createdAt.toDate(),
         user: data.user,
+        image: data.image || null,
+        location: data.location || null,
       });
     });
     this.setState({ messages });
@@ -166,10 +177,19 @@ export default class Chat extends React.Component {
     this.referenceChatMessages.add({
       uid: this.state.uid,
       _id: message._id,
-      text: message.text || '',
+      text: message.text || "",
       createdAt: message.createdAt,
       user: message.user,
+      image: message.image || null,
+      location: message.location || null,
     });
+  };
+
+  //define title in navigation bar
+  static navigationOptions = ({ navigation }) => {
+    return {
+      title: `${navigation.state.params.userName}'s Chat`,
+    };
   };
 
   // This function will active once we touch the send item to send our message.
@@ -182,6 +202,17 @@ export default class Chat extends React.Component {
         this.saveMessages();
       }
     );
+  };
+
+  /* Gifted Chat provides you with a prop called renderInputToolbar that 
+     lets you change how the bar is rendered. To only render the default 
+     InputToolbar when the user is online: */
+  renderInputToolbar(props) {
+    if (props.isConnected === false) {
+      return <InputToolbar {...props} />;
+    } else {
+      return <InputToolbar {...props} />;
+    }
   }
 
   // This Function control font, shape , color etc on both left & right of any message to display on mobile app.
@@ -199,20 +230,34 @@ export default class Chat extends React.Component {
         }}
       />
     );
-  }
+  };
 
-  /* Gifted Chat provides you with a prop called renderInputToolbar that 
-     lets you change how the bar is rendered. To only render the default 
-     InputToolbar when the user is online: */
-  renderInputToolbar(props) {
-    if (this.state.isConnected == false) {
-    } else {
+  /**
+   * displays the communication features
+   * @function renderCustomActions
+   */
+
+  renderCustomActions = (props) => {
+    return <CustomActions {...props} />;
+  };
+
+  //custom map view
+  renderCustomView(props) {
+    const { currentMessage } = props;
+    if (currentMessage.location) {
       return (
-        <InputToolbar
-          {...props}
+        <MapView
+          style={{ width: 150, height: 100, borderRadius: 13, margin: 3 }}
+          region={{
+            latitude: currentMessage.location.latitude,
+            longitude: currentMessage.location.longitude,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          }}
         />
       );
     }
+    return null;
   }
 
   render() {
@@ -231,6 +276,8 @@ export default class Chat extends React.Component {
           }
           // messages={this.state.messages}
           onSend={(messages) => this.onSend(messages)}
+          renderActions={this.renderCustomActions.bind(this)}
+          renderCustomView={this.renderCustomView.bind(this)}
           user={{
             _id: this.state.uid,
           }}
