@@ -34,7 +34,7 @@
 
  ## Setting up the development environment:
 
- - Clone the repository: `git clone https://github.com/faysalmahmod/Chat-App`
+ - Clone the repository: `git clone https://github.com/Siavash-Ebrahimi/ChatMat.git`
  - Install Expo CLI as a global npm package: `npm install -g expo-cli`
  - Install all project dependencies: `npm install`
  - Head over to https://expo.dev/, create an account and log in via terminal with `expo login`
